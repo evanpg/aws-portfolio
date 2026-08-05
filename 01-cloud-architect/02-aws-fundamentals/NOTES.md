@@ -71,3 +71,25 @@ S3 Patterns
 - great for 'offload'
 - INPUT and/or OUTPUT to many AWS products
 
+CloudFormation Basics
+- IAC Product allows automation infrastructure creation, update and deletion
+- uses YAML or JSON
+- First field is TemplateFormatVersion
+- Second MUST be Description
+- Other things that are defined are Metadata, Parameters, Mappings, Conditions, Transform, Resources, Outputs...
+
+- Cloudformation starts with a Template
+- A Template contains resources
+- A Logical resource is an instance with properties for configuration
+- CloudFormation creates one or more Stacks
+- For logical resources in a stack, CloudFormation creates a Physical Resource
+- Stacks interact with resources in an AWS account
+
+In Practice:
+1. Create an instance by going to CloufFormation > Create Instance
+    - optionally upload a template
+2. Wait for instance to create
+3. Access instance in EC2 by right-clicking > Connect
+    - There is an option to use SSH or SSM, SSM may be more convenient, just type bash
+4. Delete Instance by right clicking > Delete
+5. Confirm deletion by going to CloudFormation > Stacks
