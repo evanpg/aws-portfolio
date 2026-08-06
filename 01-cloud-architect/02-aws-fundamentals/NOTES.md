@@ -64,7 +64,7 @@ Bucket names are:
 - cant be IP formatted e.g. 1.1.1.1
 - you can only have up to... soft limit: 100 buckets hard limit: 1000, per account
 
-S3 Patterns
+S3 Patterns...
 - is an object storage system, not file or block
 - cant mount it 
 - great for large-scale data storage, distribution or upload
@@ -89,7 +89,44 @@ In Practice:
 1. Create an instance by going to CloufFormation > Create Instance
     - optionally upload a template
 2. Wait for instance to create
-3. Access instance in EC2 by right-clicking > Connect
+3. Access instance by going to EC2 and right-clicking instance > Connect
     - There is an option to use SSH or SSM, SSM may be more convenient, just type bash
 4. Delete Instance by right clicking > Delete
 5. Confirm deletion by going to CloudFormation > Stacks
+
+Cloudwatch
+- Collects and manages operational data
+- Metrics: AWS Products, Apps, on-premises
+    - Time ordered data using timestamps and values
+    - Dimensions: name value pairs for separating data scopes
+    - Some metrics are gathered Natively by a product, e.g. CPU utilization
+    - Others need a CloudWatch Agent e.g. Process memory utilizations
+- Logs: e.g. Linux server logs
+- Events: AWS Services & Schedules
+- Alarms: linked to specific metric, detect errors, can trigger action 
+    - helpful for auto-scaling
+- Statistics: from Console or API
+- Namespace - container for monitoring data.
+    - All AWS data goes into a namespace 'AWS/service' > AWS/EC2
+
+In Practice:
+1. Launch an Instance
+2. In Advanced Details select 'Detailed CloudWatch Monitoring'
+3. Wait for Launch
+4. Go to Cloudwatch in search
+5. Click 'Alarms' > 'All alarms'
+6. Create Alarm > Select Metric
+7. Click EC2 > Per Instance Metrics
+8. Find Instance (Refer to Instance Monitor) > Select CPUUtilization
+9. 'Select Metric', and Conditions > Static > 'Greater Eqaul > define threshold '15' (percent)
+10. 'Next', decide on a notification, if any (mainly used for production)
+11. Select as alarm, give name e.g. "High CPU"
+12. Alarm State = Insignificant Data means not enough data to trigger
+13. Go back to Instance and Connect "EC2 Instance" > Connect
+14. Install 'Stress App' (for testing purposes)
+    - sudo yum install stress -y
+15. Run stress $stress
+16. stress -c 1 -t 3600
+17. go back to Cloudwatch console, click on Alarm to monitor
+ 
+ ![alt text](image.png)
