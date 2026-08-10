@@ -9,10 +9,9 @@ S3 Security (Resource Policies & ACLs)
             - "Principal": "*"  << this field defines a Resource Policy>>
     - Identity Policies only work within that account
 
-Access Control Lists (ACLs)
+Access Control Lists (ACLs) - A legacy sub-resource
 - AWS prefers you use bucket policies because they're inflexible 
 - ACLs on objects and buckets
-- A legacy subresource
 - 5 conditions of ACL
     - READ: list objects in bucket
     - WRITE: create overwrite, delete objects in bucket
@@ -338,3 +337,131 @@ S3 Replication
     - SSR - Resilience with strict sovereignty
     - CRR - Global Resilience Improvements
     - CRR - Latency Reduction
+
+In Practice:
+Disaster Recovery 
+1. Create Source Bucket in useast-1 "sourcebucket-useast-1234"
+    - Go into Properties > Enable Static Website Hosting > use index.html for handling both
+    - Go to Permissions and uncheck Block Public Access
+    - Add Bucket Policy to allow GET on S3 Bucket
+2. Create Destination Bucket in uswest-1 "destinationbucket-uswest-1234"
+    - Go into Properties > Enable Static Website Hosting > use index.html for handling both
+    - Go to Permissions and uncheck Block Public Access
+    - Add Bucket Policy to allow GET on S3 Bucket
+3. Go to Source Bucket and Create Replication Rule > Enable Versioning on Bucket
+    - Name "StaticWebsiteDisasterRecovery"
+    - Apply to All Objects in Bucket
+    - Destination: "destinationbucket-uswest-1234" (Enable Bucket Versioning on Destination)
+    - Create new IAM Role
+    - Replicate Existing Objects? appears
+4. Upload to Source Bucket, and you will see it in the Destination Bucket, each with different endpoints
+5. Replacing files in Source will affect Destination (with some delay)
+
+S3 Presigned URLs
+- An S3 Bucket without Public Access configured, only an authenticated User can access
+    - But an admin can generate a presigner URL with expiration and pass it to an unauthenticated outside entity
+        - can PUT or GET
+- Server can generate Presigned URL where S3 accesses Media Bucket and return to entity
+- You can create a Presigned URL for an Object you don't have access to it, not very applicable
+- When using the URL, you have the same permissions as the entity that created it
+- Access denied could mean the generating ID never had access, or doesn't currently have access
+- Use an IAM user to generate URL
+- Don't generate Presigned URL with a Role,
+    - URL stops working when temporarily credentials expire
+
+In Practice:
+1. Create Bucket in General Account "media-1234"
+    - Upload media.jpg, notice you can't view the file via public access endpoint, but can still open with token
+2. Go to CloudShell 
+```bash 
+aws s3 ls
+aws s3 presign s3://media-1234/media.jpg --expires-in 9999
+```
+- This generates a really long URL which can be used by anyone
+3. Go to IAM and add an inline policy "Deny S3" to creator
+    - You will no longer to be able to see media, as the creator no longer has access
+4. You can still generate a new Presigned URLs
+    - Remove inline Policy and you can view media again from new URL
+5. You can also generate URLs for non-existing Objects
+6. You can also go into the Object > Select Action > Create Presigned URL
+
+S3 Select and Glacier Select
+- To retrieve partial data of Object with SQL-like statements (S3 Object can be up to 5TB)
+- .csv, .json, others
+- Up to 400% faster and 80% cheaper
+
+S3 Events
+- Notification generated when something happens in a bucket 
+    - Can be delivered to different destinations: SNS Topic, Lambda, SQS Queue 
+    - Events like ObjectCreated, PUT, POST, COPY, automatically send files for processing
+    - ObjectDeletion, ObjectRestore, Post(Initiated)
+    - Replication: OperationFailedReplication
+- To use, add Event Notification Config to Bucket
+- Also need Resource Policy allowing S3 Services Principle access
+- EventBridge is an alternative that supports more types of events and more services
+
+S3 Access Logs
+- If you want Bucket and Object Access logs on a Source Bucket, and store it in a Target Bucket
+- Must enable logging on the Source Bucket
+    - Using PUT Bucket logging operation CLI or API
+    - Or UI
+- Logging is managed  by S3 Delivery Group
+    - Reads Logging Config that you set on Source Bucket
+- Must give Log Delivery Group Permissions on Target Bucket, using ACL write access
+- Logs delivered as files containing new line delimited records
+
+S3 Object Lock
+- Group of features you enable when you create a bucket, to add retroactively you need to contact AWS
+- Implements a write once/ Read Many (WORM): no delete, no overwrite
+- Requires versioning - individual versions are locked
+- Both, One or the Other, or None 
+- A Bucket can have default Object Lock Settings
+- 2 ways to manage retention:
+    1. Retention Period: Specify days and years
+        - Cant be changed, must wait until expires        
+        - Compliance Mode:
+            - Retention period cannot be updated, even by root User
+        - Governance mODE: special permissions granted allowing setting to be adjusted 
+            - has permission 's3:GovernanceRetention'
+    2. Legal Hold   
+        - Set of ON or OFF
+        - 's3:PutObjectLegalHold'
+        - Prevents accidental deletion
+- Can use together
+
+S3 Access Points
+- Simplify managing access to S3 Buckets/Objects
+- Rather than 1 Bucket w/ 1 bucket policy, create many access points, each with
+    - different policies
+        - restrict based on prefixes, tags, or actions
+    - different network Access Controls
+- Each Access Point has its own endpoint address
+    - Created via Console or 
+```bash 
+    aws s3control create-access-point --name secretcats --account-id 1234567 --bucket catpics
+```
+- Access Points are like mini views of Bucket
+- APs can be configured for access via a VPC - requires a VPC endpoint 
+    - Access via this route can be enforced by endpoint policies
+
+In Practice:
+Multi-Region Access Points
+1. Create 2 Buckets with different AWS Regions
+    - Enable Bucket Versioning
+2. Go to S3 > Create Multi-Regions Access Point
+    - Add both Buckets
+    - After clicking Create, it may take 30 mins for Ready status
+3. Go to AP and Create a Replication Rule
+    - 'Apply Scope to All Objects in the Bucket'
+    - Create
+4. Change Region to one not yet used
+5. Go to CloudShell
+```bash 
+    dd if=/dev/urandom of=test4.file bs=1M count=10 #CREATE FILE AND UPLOAD TO S3
+```
+- Go back to Access Point you created and copy ARN 
+```bash
+    aws s3 cp test4.file s3://arn:aws:s3::123456789012:accesspoint/mu7cpm7zpa117.mrap/ #UPLOAD FILE TO ACCESSPOINT #
+    #replication takes some time 
+```
+- One region bucket gets the direct version, and the other takes toime to recieve replicated copy

@@ -129,4 +129,43 @@ In Practice:
 16. stress -c 1 -t 3600
 17. go back to Cloudwatch console, click on Alarm to monitor
  
- ![alt text](image.png)
+High Availability (HA)
+- Aims to ensure an agreed level of operational performance, uptime per year:
+    - 99.9% = 8.77 hours
+    - 99.999% = 5.26 minutes
+- Can use Redundant Servers
+- Minimizing Outages
+
+Fault Tolerance (FT)
+- Property that enables a system to continue to operate properly in the event of the failure of on or some its component
+- Designed to operate through failure without disruption
+- Levels of redundancy and session routing around failed components
+- Harder to design, more important than HA
+
+Disaster Recovery (DR)
+- Set of policies, tools, and procedures to enable the recovery or continuation of vital technology infrastructure and systems following a natural or human-induced disaster
+- Make sure staff has availability, and knowledge of how to access.
+- use periodic testing
+
+Route53
+- DNS as a Service
+- Global Service with a single database
+- Globally Resilient
+- Two main services:
+    1. Register Domains
+    2. Host Zones... managed nameservers
+Registries manage top-level domains (.com .io .net etc.)
+A Zone file is a database with registry info
+Route53 puts a zone file into 4 managed nameservers, which is a Hosted Zone
+    - Can be Private (linked to VPCs)
+NS records delegate ownership into the nameservers (hosted zone)
+
+DNS Records:
+- A: maps www to IPv4
+- AAAA: maps www to IPv6
+- CNAME: Canonical name, an alias
+- MX: mail exchange
+    - has priority and value. e.g. MX 10 mail
+- TXT: prove domain ownership, block spam
+TTL: Time-To_Live, numeric value in seconds
+Client queries Resolver, which queries Root, top level, then domain. The domain sends an authoritative answer if no provider changed. TTL sets frequency of cache on non-authoritative DNS server.
